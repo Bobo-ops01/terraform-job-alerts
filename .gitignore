@@ -1,0 +1,36 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# AWS credentials and secrets
+.aws/
+.env
+.env.*
+credentials
+*.pem
+*.key
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+
+# Generated Lambda output
+response.json
+terraform/response.json
+
+# Python cache
+**/__pycache__/
