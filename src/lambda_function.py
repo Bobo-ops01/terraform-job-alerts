@@ -1,6 +1,7 @@
 
 import json
 import logging
+import re
 from html.parser import HTMLParser
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -43,11 +44,19 @@ SENIOR_KEYWORDS = [
     "vp ",
 ]
 
+LEVEL_PATTERN = re.compile(
+    r"\b(?:intern|internship|junior|entry|graduate|trainee|associate|apprentice)s?\b"
+)
+
+OPEN_LOCATIONS = ["anywhere", "worldwide", "africa", "kenya", "emea"]
+
+
 def is_relevant(job):
-    """Keep relevant technical roles at junior or unspecified levels."""
+    """Keep junior or intern tech roles that are open to Nairobi."""
 
     title = job.get("jobTitle", "").lower().strip()
     level = job.get("jobLevel", "").lower().strip()
+    geo = str(job.get("jobGeo", "")).lower()
 
     if any(word in title for word in SENIOR_KEYWORDS):
         return False
@@ -55,20 +64,14 @@ def is_relevant(job):
     if level in ["senior", "director", "lead", "executive"]:
         return False
 
-    return any(
-        keyword in title
-        for keyword in TITLE_KEYWORDS
-    )
+    if not any(keyword in title for keyword in TITLE_KEYWORDS):
+        return False
 
-SENIOR_KEYWORDS = [
-    "senior",
-    "sr.",
-    "staff engineer",
-    "principal",
-    "lead engineer",
-    "engineering manager",
-    "director",
-]
+    if not any(place in geo for place in OPEN_LOCATIONS):
+        return False
+
+    return bool(LEVEL_PATTERN.search(f"{title} {level}"))
+
 
 
 class HTMLTextParser(HTMLParser):
@@ -114,36 +117,6 @@ def fetch_jobs():
     return data.get("jobs", [])
 
 
-def is_relevant(job):
-    """Filter jobs by technical keywords and seniority."""
-
-    title = job.get("jobTitle", "")
-    level = job.get("jobLevel", "")
-
-    description = clean_html(
-        job.get("jobDescription", "")
-    )
-
-    searchable_text = " ".join([
-        title,
-        level,
-        " ".join(job.get("jobIndustry", [])),
-        job.get("jobExcerpt", ""),
-        description,
-    ]).lower()
-
-    # Exclude clearly senior positions.
-    if any(word in title.lower() for word in SENIOR_KEYWORDS):
-        return False
-
-    if level.lower() in ["senior", "lead", "executive"]:
-        return False
-
-    # Keep jobs related to our target technical fields.
-    return any(
-        keyword in searchable_text
-        for keyword in SEARCH_KEYWORDS
-    )
 
 
 def lambda_handler(event, context):
