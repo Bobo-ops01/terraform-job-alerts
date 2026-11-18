@@ -2,7 +2,9 @@ import json
 import logging
 import os
 import re
+import time
 from urllib.parse import urlencode
+from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 import boto3
@@ -75,8 +77,17 @@ def fetch_jobs():
         },
     )
 
-    with urlopen(request, timeout=20) as response:
-        data = json.loads(response.read().decode("utf-8"))
+    data = None
+    for attempt in range(1, 4):
+        try:
+            with urlopen(request, timeout=15) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            break
+        except (URLError, TimeoutError) as error:
+            logger.warning("Jobicy attempt %s failed: %s", attempt, error)
+            if attempt == 3:
+                raise
+            time.sleep(2 * attempt)
 
     if not data.get("success", False):
         raise RuntimeError("Jobicy API returned an unsuccessful response")
