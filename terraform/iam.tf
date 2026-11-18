@@ -54,7 +54,7 @@ resource "aws_iam_policy" "job_alerts_s3" {
           "s3:PutObject"
         ]
 
-        Resource = "${aws_s3_bucket.job_alerts.arn}/*"
+        Resource = "${aws_s3_bucket.job_alerts.arn}/state/*"
       }
     ]
   })
