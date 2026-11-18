@@ -1,8 +1,8 @@
 resource "aws_s3_bucket" "job_alerts" {
-  bucket = "bobo-ops01-terraform-job-alerts-2026"
+  bucket = "bobo-ops01-terraform-job-alerts-use1"
 
   tags = {
-    Name        = "bobo-ops01-terraform-job-alerts-2026"
+    Name        = "bobo-ops01-terraform-job-alerts-use1"
     Environment = "development"
     Project     = "terraform-job-alerts"
   }
