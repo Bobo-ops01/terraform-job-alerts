@@ -80,7 +80,7 @@ resource "aws_iam_policy" "job_alerts_bedrock" {
           "bedrock:InvokeModel"
         ]
 
-        Resource = "*"
+        Resource = "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-micro-v1:0"
       }
     ]
   })
