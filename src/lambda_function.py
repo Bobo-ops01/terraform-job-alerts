@@ -65,7 +65,7 @@ def is_relevant(job):
     return any(place in geo for place in OPEN_LOCATIONS)
 
 
-def fetch_jobs():
+def fetch_jobs_broad():
     """Retrieve recent remote job listings from Jobicy."""
 
     url = f"{JOBICY_API}?{urlencode({'count': 100})}"
@@ -93,6 +93,47 @@ def fetch_jobs():
         raise RuntimeError("Jobicy API returned an unsuccessful response")
 
     return data.get("jobs", [])
+
+
+SEARCH_TAGS = ["devops", "aws", "terraform", "cloud", "kubernetes", "python"]
+JOBICY_V2 = "https://jobicy.com/api/v2/remote-jobs"
+
+
+def fetch_query(params):
+    """One Jobicy query with retry. Returns a list of jobs."""
+    url = f"{JOBICY_V2}?{urlencode(params)}"
+    request = Request(url, headers={"User-Agent": "job-alerts/1.0"})
+    for attempt in range(1, 4):
+        try:
+            with urlopen(request, timeout=15) as response:
+                return json.loads(response.read().decode("utf-8")).get("jobs", [])
+        except (URLError, TimeoutError) as error:
+            logger.warning("Jobicy %s attempt %s failed: %s", params, attempt, error)
+            if attempt == 3:
+                raise
+            time.sleep(2 * attempt)
+
+
+def fetch_jobs():
+    """Run targeted searches and merge the results, de-duplicated by job ID."""
+    merged = {}
+    failures = 0
+    queries = 0
+    for tag in SEARCH_TAGS:
+        for geo in (None, "anywhere"):
+            params = {"count": 50, "tag": tag}
+            if geo:
+                params["geo"] = geo
+            queries += 1
+            try:
+                for job in fetch_query(params):
+                    merged[job["id"]] = job
+            except (URLError, TimeoutError):
+                failures += 1
+            time.sleep(0.5)
+    if failures == queries:
+        raise RuntimeError("All Jobicy queries failed")
+    return list(merged.values())
 
 
 def summarize(job):
